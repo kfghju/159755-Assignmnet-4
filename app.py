@@ -1,11 +1,8 @@
 # app.py
 import streamlit as st
 from prediction_model import predict_player_value
-
 st.set_page_config(page_title="Player Value Estimator", layout="centered")
 st.title("💰 Football Player Value Estimator")
-
-# 用户输入
 st.sidebar.header("📋 Player Info")
 name = st.sidebar.text_input("Full Name")
 age = st.sidebar.slider("Age", 16, 45, 24)
@@ -16,7 +13,6 @@ position = st.sidebar.selectbox("Best Position", ['ST', 'CM', 'CAM', 'CB', 'GK',
 stamina = st.sidebar.slider("Stamina", 20, 100, 70)
 dribbling = st.sidebar.slider("Dribbling", 20, 100, 70)
 short_passing = st.sidebar.slider("Short Passing", 20, 100, 70)
-
 if st.button("Predict Market Value"):
     input_data = {
         'Age': age,
