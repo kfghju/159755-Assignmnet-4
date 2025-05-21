@@ -8,7 +8,7 @@ from team import render_team_section
 from match import run_season_simulation
 
 
-st.title("💰 Football Player Value Estimator")
+st.title("🎮 Virtual Football Manager")
 
 # 初始化状态
 if 'budget' not in st.session_state:
