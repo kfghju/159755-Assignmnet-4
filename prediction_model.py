@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 
 # 模型训练部分（仅首次运行用）
 def train_model():
-    df = pd.read_csv("players_stats.csv")
+    df = pd.read_csv("data/players_stats.csv")
     df = df[[
         'Full Name', 'Age', 'Height', 'Weight', 'Potential', 'Best position',
         'Value', 'Wage', 'Stamina', 'Dribbling', 'Short passing']]
