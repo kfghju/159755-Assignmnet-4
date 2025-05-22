@@ -1,12 +1,12 @@
 # app.py (主程序入口)
 
 import streamlit as st
+
 st.set_page_config(page_title="Football Manager Simulator", layout="centered")
 from player_input import handle_player_input
 from recruit import render_recruit_section
 from team import render_team_section
 from match import run_season_simulation
-
 
 st.title("🎮 Virtual Football Manager")
 

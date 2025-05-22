@@ -2,7 +2,8 @@
 
 import streamlit as st
 import pandas as pd
-from prediction_model import predict_player_value
+from prediction_player_value_model import predict_player_value
+
 
 @st.cache_data
 def load_players():
@@ -11,6 +12,7 @@ def load_players():
         'Full Name', 'Age', 'Height', 'Weight', 'Potential', 'Best position',
         'Stamina', 'Dribbling', 'Short passing'
     ]].dropna()
+
 
 preset_df = load_players()
 st.session_state['preset_df'] = preset_df

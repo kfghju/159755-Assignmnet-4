@@ -1,10 +1,11 @@
-# prediction_model.py
+# prediction_player_value_model.py
 
 import pandas as pd
 import joblib
 import numpy as np
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
+
 
 # 模型训练部分（仅首次运行用）
 def train_model():
@@ -44,6 +45,7 @@ def train_model():
     model.fit(X_train, y_train)
     joblib.dump(model, "models/player_value_model.pkl")
 
+
 # 单个预测入口
 def predict_player_value(player_dict):
     model = joblib.load("models/player_value_model.pkl")
@@ -65,6 +67,7 @@ def predict_player_value(player_dict):
 
     log_pred = model.predict(df)[0]
     return np.exp(log_pred)  # 将 log 预测结果转换回欧元数值
+
 
 if __name__ == '__main__':
     train_model()
