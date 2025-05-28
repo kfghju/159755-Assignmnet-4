@@ -1,26 +1,41 @@
 # components/player_input.py
+import os
 
 import streamlit as st
 import pandas as pd
-from prediction_player_value_model import predict_player_value
+import sqlite3
+from components.predict_player_value_model import predict_player_value
 
 
 @st.cache_data
 def load_players():
-    df = pd.read_csv("data/players_stats.csv")
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    database_path = os.path.join(base_path, '..', 'data', 'allData.sl3')
+    conn = sqlite3.connect(database_path)
+    df = pd.read_sql_query("select * from player_stats", conn)
+    conn.close()
+    df.rename(columns={
+        'full_name': 'Full Name',
+        'age': 'Age',
+        'potential': 'Potential',
+        'best_position': 'Best position',
+        'short_passing': 'Short passing',
+        'dribbling': 'Dribbling',
+        'stamina': 'Stamina',
+        'height_cm': 'Height',
+        'weight_kg': 'Weight'
+    }, inplace=True)
+
     return df[[
         'Full Name', 'Age', 'Height', 'Weight', 'Potential', 'Best position',
-        'Stamina', 'Dribbling', 'Short passing'
+        'Stamina', 'Dribbling', 'Short passing', 'year'
     ]].dropna()
 
 
 preset_df = load_players()
-st.session_state['preset_df'] = preset_df
 
 
 def handle_player_input(mode):
-    filtered_df = preset_df.copy()
-
     if mode == "Create New Player":
         st.sidebar.header("📝 Create Your Player")
         name = st.sidebar.text_input("Player Name")
@@ -53,7 +68,6 @@ def handle_player_input(mode):
     elif mode == "Choose Preset Player":
         st.sidebar.header("📋 Choose Preset Player")
         search_name = st.sidebar.text_input("🔍 Search by name")
-
         if 'position_filter' not in st.session_state:
             st.session_state['position_filter'] = []
         st.session_state['position_filter'] = st.sidebar.multiselect(
@@ -62,26 +76,26 @@ def handle_player_input(mode):
             default=st.session_state['position_filter']
         )
         position_filter = st.session_state['position_filter']
+        filtered_df = preset_df.copy()
+        filtered_df = filtered_df[filtered_df['year'] == '2025']
         if position_filter:
             filtered_df = filtered_df[filtered_df['Best position'].isin(position_filter)]
-
         if search_name:
             filtered_df = filtered_df[filtered_df['Full Name'].str.contains(search_name, case=False)]
-
         st.sidebar.markdown(f"Available Preset Players: **{len(filtered_df['Full Name'].unique())}**")
 
-        selected = st.sidebar.selectbox("Select Player", filtered_df['Full Name'].unique())
-        if not filtered_df[filtered_df['Full Name'] == selected].empty:
-            player_row = filtered_df[filtered_df['Full Name'] == selected].sample(n=1).iloc[0]
-        else:
-            st.error("⚠️ No matching players found for the selected name and filters.")
-            st.stop()
-
+        # Recommended top 10 players (sorted by potential)
+        filtered_df['Potential'] = pd.to_numeric(filtered_df['Potential'], errors='coerce')
+        recommended_df = filtered_df.sort_values(by='Potential', ascending=False).head(10)
+        st.markdown("Top 10 Recommended Players")
+        st.dataframe(recommended_df[['Full Name', 'Age', 'Potential', 'Stamina', 'Dribbling', 'Short passing']])
+        selected = st.radio("Choose Recommended Players", recommended_df['Full Name'].tolist(), index=0)
+        player_row = recommended_df[recommended_df['Full Name'] == selected].iloc[0]
         input_data = {
             'Name': player_row['Full Name'],
             'Age': player_row['Age'],
-            'Height': int(str(player_row['Height'])[:3]),
-            'Weight': int(str(player_row['Weight']).replace('kg', '').strip()[:3]),
+            'Height': int(float(str(player_row['Height']).strip())),
+            'Weight': int(float(str(player_row['Weight']).strip())),
             'Potential': float(str(player_row['Potential']).split('\n')[0]),
             'Best position': player_row['Best position'],
             'Stamina': float(str(player_row['Stamina']).split('\n')[0]),
