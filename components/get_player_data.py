@@ -1,3 +1,5 @@
+import os
+
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 import pandas as pd
@@ -24,13 +26,12 @@ column_names = []
 base_url = (
     "https://sofifa.com/players?type=all&lg%5B0%5D=13&lg%5B1%5D=31&lg%5B2%5D=53&lg%5B3%5D=19&lg%5B4%5D=16&showCol%5B0"
     "%5D=ae&showCol%5B1%5D=hi&showCol%5B2%5D=wi&showCol%5B3%5D=oa&showCol%5B4%5D=pt&showCol%5B5%5D=bp&showCol%5B6%5D"
-    "=vl&showCol%5B7%5D=wg&showCol%5B8%5D=sh&showCol%5B9%5D=dr&showCol%5B10%5D=st&set=true"
+    "=vl&showCol%5B7%5D=wg&showCol%5B8%5D=sh&showCol%5B9%5D=dr&showCol%5B10%5D=st&showCol%5B%5D=tg&set=true"
 )
 
-# years = ['250036', '240036', '230036', '220036', '210036', '200036', '190036', '180036', '170036', '160036', '150036',
-#          '140036', '130036', '120036', '110036', '100036', '090036', '080036', '070036']
+years = ['250036', '240050', '230054', '220069', '210064', '200061', '190075', '180084', '170099', '160058', '150059',
+         '140052', '130034', '120002', '110002', '100002', '090002', '080002', '070002']
 
-years = ['080036', '070036']
 
 for year in years:
     for offset in range(0, 1320, 60):
@@ -82,7 +83,10 @@ for year in years:
     df = pd.DataFrame(all_players)
     df["Value"] = df["Value"].apply(parse_euro)
     df["Wage"] = df["Wage"].apply(parse_euro)
-    df.to_csv(f"../data/player_data/players_stats_{year[:2]}.csv", index=False, encoding="utf-8-sig")
+    if not os.path.exists("../data/player_data"):
+        os.makedirs("../data/player_data")
+    df.to_csv(f"../data/player_data/players_stats_20{year[:2]}.csv", index=False, encoding="utf-8-sig")
+    all_players.clear()
     print(f"Save data as players_stats_{year[:2]}.csv，include", len(df), " players")
 
 driver.quit()
