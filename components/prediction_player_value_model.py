@@ -2,60 +2,40 @@ import os
 import pandas as pd
 import joblib
 import numpy as np
+import sqlite3
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
 
 
-def train_model():
-    player_df = pd.read_csv(f"data/player_data/players_stats_07.csv")
-    player_df['Year'] = '2007'
-    for year in range(8, 10):
-        player_df = pd.read_csv(f"data/player_data/players_stats_0{year}.csv")
-        player_df['Year'] = year + 2000
-        player_df['Year'] = player_df['Year'].astype(str)
-        player_df = pd.concat([player_df, player_df], axis=0, ignore_index=True)
+def train_model(db_path="../data/allData.sl3"):
+    conn = sqlite3.connect(db_path)
+    df = pd.read_sql_query("SELECT * FROM player_stats WHERE value != 0 and wage != 0", conn)
+    conn.close()
 
-    for year in range(10, 26):
-        player_df = pd.read_csv(f"data/player_data/players_stats_{year}.csv")
-        player_df['Year'] = year + 2000
-        player_df['Year'] = player_df['Year'].astype(str)
-        player_df = pd.concat([player_df, player_df], axis=0, ignore_index=True)
+    df['value'] = np.log(df['value'])  # 目标变量对数化
+    df['wage'] = np.log(df['wage'])
 
+    X = df.drop(columns=['full_name', 'value', 'wage', 'year'])
+    y = df['value']
 
-    player_df['Height'] = player_df['Height'].astype(str).str[:3].astype(int)
-    player_df['Weight'] = player_df['Weight'].astype(str).str.extract(r'(\d+)').astype(int)
+    if 'best_position' in X.columns:
+        X = pd.get_dummies(X, columns=['best_position'])
 
-
-    player_df['Value'] = player_df['Value'].replace(0, np.nan)
-    player_df['Wage'] = player_df['Wage'].replace(0, np.nan)
-    player_df = player_df.dropna(subset=['Value', 'Wage'])
-    player_df['Value'] = np.log(player_df['Value'])
-    player_df['Wage'] = np.log(player_df['Wage'])
-
-
-    for col in ['Stamina', 'Dribbling', 'Short passing']:
-        player_df[col] = player_df[col].astype(str).str.extract(r'(\d+)').astype(float)
-
-
-    X = player_df.drop(['Full Name', 'Value', 'Wage', 'Year'], axis=1)
     for col in X.columns:
         if X[col].dtype == 'object':
-            X[col] = X[col].astype(str).str.extract(r'(\d+)').astype(float)
-    y = player_df['Value']
-
-
-    if 'Best position' in X.columns:
-        X = pd.get_dummies(X, columns=['Best position'])
+            X[col] = X[col].astype(str).str.extract(r'(\d+)')
+            X[col] = pd.to_numeric(X[col], errors='coerce')
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
     model = RandomForestRegressor()
     model.fit(X_train, y_train)
+
     # y_perd = model.predict(X_test)
     # mse = mean_squared_error(y_test, y_perd)
     # print(mse)
-    joblib.dump(model, "models/player_value_model.pkl")
-
+    joblib.dump(model, "../models/player_value_model.pkl")
 
 def predict_player_value(player_dict):
     base_path = os.path.dirname(os.path.abspath(__file__))
