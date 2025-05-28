@@ -1,39 +1,46 @@
 # app.py (主程序入口)
-
+import os
+import pandas as pd
 import streamlit as st
 
 st.set_page_config(page_title="Football Manager Simulator", layout="centered")
-from player_input import handle_player_input
-from recruit import render_recruit_section
-from team import render_team_section
-from match import run_season_simulation
+from components.player_input import handle_player_input
+from components.recruit import render_recruit_section
+from components.team_manage import render_team_section
+from components.match import run_season_simulation
+from components.pre_match_predict import show_all_teams
+from components.predict_match_result_model_pre_match import predict_match_result
+from components.team_vector import build_team_vector
 
 st.title("🎮 Virtual Football Manager")
 
-# 初始化状态
+# Initialization state
 if 'budget' not in st.session_state:
-    st.session_state['budget'] = 1_000_000_000
+    st.session_state['budget'] = 100_000_000
 if 'team' not in st.session_state:
     st.session_state['team'] = []
 
-# 模式选择
-mode = st.radio("Player Input Mode", ["Create New Player", "Choose Preset Player"])
+# Function Selection
+mode = st.radio("Select which one you want", ["Create New Player", "Choose Preset Player",
+                                              "Match Predict (Pre-match)", "Match Predict (In-match)"])
 st.session_state['mode'] = mode
 
-# 处理球员输入逻辑（侧边栏 + 模型预测）
+# Processing player input logic (sidebar + model predictions)
 handle_player_input(mode)
 
-# 招募模块（展示 Player to Recruit + 按钮）
+# Recruitment module (showing Player to Recruit + button)
 render_recruit_section(mode)
 
-# 球队展示 + 管理
-render_team_section()
+# Team Presentation + Management
+render_team_section(mode)
 
-# 比赛阶段（需已确认）
+show_all_teams(mode)
+
+# Simulation Match
 run_season_simulation()
 
-# 重置按钮（放在最后）
-if st.sidebar.button("🔁 Reset Game"):
+# Reset button
+if st.sidebar.button("Reset"):
     for key in list(st.session_state.keys()):
         del st.session_state[key]
     st.rerun()
