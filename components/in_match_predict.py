@@ -7,13 +7,13 @@ import joblib
 # ===== Data and model loading =====
 @st.cache_data
 def load_data():
-    base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # 返回项目根目录
+    base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     club_stats = pd.read_csv(os.path.join(base, "data", "club_stats.csv"))
     winrates = pd.read_csv(os.path.join(base, "data", "team_winrates.csv"))
     return club_stats, winrates
 
 def load_model_and_scaler():
-    base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # 返回项目根目录
+    base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     model = joblib.load(os.path.join(base, "models", "in_match_result_model.pkl"))
     scaler = joblib.load(os.path.join(base, "models", "in_match_result_scaler.pkl"))
     return model, scaler
@@ -35,6 +35,9 @@ def main():
     club_stats, winrates = load_data()
     team_names = sorted(winrates["HomeTeam"].unique())
 
+    # 处理赛季为可比较的整数年份
+    club_stats["SeasonYear"] = club_stats["Season"].str[:4].astype(int)
+
     col1, col2 = st.columns(2)
     with col1:
         home_team = st.selectbox("🏠 Home Team", team_names)
@@ -49,8 +52,9 @@ def main():
 
     if st.button("🔮 Predict"):
         try:
-            home_row = club_stats[(club_stats["Club"] == home_team) & (club_stats["Season"] == "2024/25")].iloc[0]
-            away_row = club_stats[(club_stats["Club"] == away_team) & (club_stats["Season"] == "2024/25")].iloc[0]
+            # 自动获取每队最新赛季记录
+            home_row = club_stats[club_stats["Club"] == home_team].sort_values("SeasonYear", ascending=False).iloc[0]
+            away_row = club_stats[club_stats["Club"] == away_team].sort_values("SeasonYear", ascending=False).iloc[0]
             win_row = winrates[winrates["HomeTeam"] == home_team].iloc[0]
             away_win_row = winrates[winrates["HomeTeam"] == away_team].iloc[0]
         except IndexError:
@@ -87,8 +91,8 @@ def main():
         model, scaler = load_model_and_scaler()
         X_scaled = scaler.transform(df_input)
         pred_proba = model.predict_proba(X_scaled)[0]
-        label_order = model.classes_  # 模型内部类别顺序（例如 ['H', 'D', 'A']）
-        pred_label = label_order[np.argmax(pred_proba)]  # 概率最大项对应的标签
+        label_order = model.classes_
+        pred_label = label_order[np.argmax(pred_proba)]
 
         label_text = {'H': '🏠 Home Win', 'D': '⚖️ Draw', 'A': '🏟️ Away Win'}
         readable = label_text[pred_label]
@@ -103,6 +107,6 @@ def main():
         st.markdown(f"### 💡 Betting Suggestion: **{bet_suggestion}**")
         st.markdown(f"🏠 Home Win Rate: **{home_winrate:.2f}**  🛫 Away Win Rate: **{away_winrate:.2f}**")
 
-# ===== Exported for app.py to call =====
+# ===== Exported for app.py =====
 def render_in_match_predict_section():
     main()
