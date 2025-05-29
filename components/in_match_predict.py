@@ -7,13 +7,13 @@ import joblib
 # ===== Data and model loading =====
 @st.cache_data
 def load_data():
-    base = os.path.dirname(os.path.abspath(__file__))
+    base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # ⬅ 回到项目根目录
     club_stats = pd.read_csv(os.path.join(base, "data", "club_stats.csv"))
     winrates = pd.read_csv(os.path.join(base, "data", "team_winrates.csv"))
     return club_stats, winrates
 
 def load_model_and_scaler():
-    base = os.path.dirname(os.path.abspath(__file__))
+    base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # ⬅ 回到项目根目录
     model = joblib.load(os.path.join(base, "models", "in_match_result_model.pkl"))
     scaler = joblib.load(os.path.join(base, "models", "in_match_result_scaler.pkl"))
     return model, scaler
@@ -21,14 +21,14 @@ def load_model_and_scaler():
 # ===== Betting suggestion function =====
 def betting_recommendation(pred_result, home_winrate, away_winrate, draw_gap=0.05):
     if pred_result == 'H':
-        return 'Bet' if home_winrate > away_winrate else '❌ No Bet'
+        return '✅ Bet' if home_winrate > away_winrate else '❌ No Bet'
     elif pred_result == 'A':
-        return 'Bet' if away_winrate > home_winrate else '❌ No Bet'
+        return '✅ Bet' if away_winrate > home_winrate else '❌ No Bet'
     elif pred_result == 'D':
-        return 'Bet' if abs(home_winrate - away_winrate) <= draw_gap else '❌ No Bet'
+        return '✅ Bet' if abs(home_winrate - away_winrate) <= draw_gap else '❌ No Bet'
     return 'Unknown'
 
-# ===== Streamlit Main Function =====
+# ===== Main UI function =====
 def main():
     st.title("🏟️ In-Match Result Prediction")
 
@@ -48,16 +48,19 @@ def main():
     odd_d = st.number_input("💰 Odds - Draw", min_value=1.0, value=3.0)
 
     if st.button("🔮 Predict"):
-        # Get data rows
-        home_row = club_stats[(club_stats["Club"] == home_team) & (club_stats["Season"] == "2024/25")].iloc[0]
-        away_row = club_stats[(club_stats["Club"] == away_team) & (club_stats["Season"] == "2024/25")].iloc[0]
+        try:
+            home_row = club_stats[(club_stats["Club"] == home_team) & (club_stats["Season"] == "2024/25")].iloc[0]
+            away_row = club_stats[(club_stats["Club"] == away_team) & (club_stats["Season"] == "2024/25")].iloc[0]
+        except IndexError:
+            st.error("❌ No data found for selected teams in season 2024/25.")
+            return
+
         win_row = winrates[winrates["HomeTeam"] == home_team].iloc[0]
         away_win_row = winrates[winrates["HomeTeam"] == away_team].iloc[0]
 
         home_winrate, away_winrate = win_row["HomeWinRate"], away_win_row["AwayWinRate"]
         eps = 1e-6
 
-        # All odds features
         df_input = pd.DataFrame([{
             'HTHG': hthg, 'HTAG': htag,
             'B365H': odd_h, 'B365D': odd_d, 'B365A': odd_a,
@@ -82,7 +85,6 @@ def main():
             'DARatio': odd_d / (odd_a + eps)
         }])
 
-        # Model loading & prediction
         model, scaler = load_model_and_scaler()
         X_scaled = scaler.transform(df_input)
         pred_index = model.predict(X_scaled)[0]
@@ -94,7 +96,6 @@ def main():
         readable = label_text[pred_label]
         bet_suggestion = betting_recommendation(pred_label, home_winrate, away_winrate)
 
-        # Display results
         st.success(f"🎯 Prediction: **{readable}**")
         st.markdown("### 📊 Probability")
         st.markdown(f"- Home Win: **{pred_proba[0]*100:.1f}%**")
@@ -104,5 +105,6 @@ def main():
         st.markdown(f"### 💡 Betting Suggestion: **{bet_suggestion}**")
         st.markdown(f"🏠 Home Win Rate: **{home_winrate:.2f}**  🛫 Away Win Rate: **{away_winrate:.2f}**")
 
+# ===== Exported function for app.py =====
 def render_in_match_predict_section():
     main()
