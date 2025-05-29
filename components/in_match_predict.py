@@ -30,7 +30,6 @@ def betting_recommendation(pred_result, home_winrate, away_winrate, draw_gap=0.0
 
 # ===== Streamlit Main Function =====
 def main():
-    st.set_page_config(page_title="⚡ In-Match Football Predictor", layout="centered")
     st.title("🏟️ In-Match Result Prediction")
 
     club_stats, winrates = load_data()
