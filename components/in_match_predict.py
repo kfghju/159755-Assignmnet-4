@@ -86,8 +86,9 @@ def main():
 
         model, scaler = load_model_and_scaler()
         X_scaled = scaler.transform(df_input)
-        pred_label = model.predict(X_scaled)[0]             # ⚠️ 直接是 'H' / 'D' / 'A'
         pred_proba = model.predict_proba(X_scaled)[0]
+        label_order = model.classes_  # 模型内部类别顺序（例如 ['H', 'D', 'A']）
+        pred_label = label_order[np.argmax(pred_proba)]  # 概率最大项对应的标签
 
         label_text = {'H': '🏠 Home Win', 'D': '⚖️ Draw', 'A': '🏟️ Away Win'}
         readable = label_text[pred_label]
