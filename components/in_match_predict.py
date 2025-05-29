@@ -105,3 +105,5 @@ def main():
         st.markdown(f"### 💡 Betting Suggestion: **{bet_suggestion}**")
         st.markdown(f"🏠 Home Win Rate: **{home_winrate:.2f}**  🛫 Away Win Rate: **{away_winrate:.2f}**")
 
+def render_in_match_predict_section():
+    main()
