@@ -8,12 +8,14 @@ from sklearn.metrics import mean_squared_error
 from sklearn.model_selection import train_test_split
 
 
-def train_model(db_path="../data/allData.sl3"):
-    conn = sqlite3.connect(db_path)
+def train_model():
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    database_path = os.path.join(base_path, '..', 'data', 'allData.sl3')
+    conn = sqlite3.connect(database_path)
     df = pd.read_sql_query("SELECT * FROM player_stats WHERE value != 0 and wage != 0", conn)
     conn.close()
 
-    df['value'] = np.log(df['value'])  # 目标变量对数化
+    df['value'] = np.log(df['value'])
     df['wage'] = np.log(df['wage'])
 
     X = df.drop(columns=['full_name', 'value', 'wage', 'year'])
@@ -35,14 +37,20 @@ def train_model(db_path="../data/allData.sl3"):
     # y_perd = model.predict(X_test)
     # mse = mean_squared_error(y_test, y_perd)
     # print(mse)
-    joblib.dump(model, "../models/player_value_model.pkl")
+    joblib.dump(model, os.path.join(base_path, '..', 'models', 'player_value_model.pkl'))
+
 
 def predict_player_value(player_dict):
     base_path = os.path.dirname(os.path.abspath(__file__))
-    data_path = os.path.join(base_path, '..', 'models', 'player_value_model.pkl')
-    model = joblib.load(data_path)
-    df = pd.DataFrame([player_dict])
+    model_path = os.path.join(base_path, '..', 'models', 'player_value_model.pkl')
+    try:
+        model = joblib.load(model_path)
+    except (FileNotFoundError, EOFError, Exception):
+        print("Training model...")
+        train_model()
+        model = joblib.load(model_path)
 
+    df = pd.DataFrame([player_dict])
     for col in ['Stamina', 'Dribbling', 'Short passing']:
         df[col] = df[col].astype(float)
 
@@ -58,7 +66,7 @@ def predict_player_value(player_dict):
     log_pred = model.predict(df)[0]
     return np.exp(log_pred)
 
-
-if __name__ == '__main__':
-    train_model()
+#
+# if __name__ == '__main__':
+#     train_model()
 
