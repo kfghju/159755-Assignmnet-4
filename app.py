@@ -9,8 +9,6 @@ from components.recruit import render_recruit_section
 from components.team_manage import render_team_section
 from components.match import run_season_simulation
 from components.pre_match_predict import show_all_teams
-from components.predict_match_result_model_pre_match import predict_match_result
-from components.team_vector import build_team_vector
 
 st.title("🎮 Virtual Football Manager")
 
