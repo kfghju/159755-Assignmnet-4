@@ -7,7 +7,7 @@ import joblib
 # ===== Data and model loading =====
 @st.cache_data
 def load_data():
-    base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # 项目根目录
     club_stats = pd.read_csv(os.path.join(base, "data", "club_stats.csv"))
     winrates = pd.read_csv(os.path.join(base, "data", "team_winrates.csv"))
     return club_stats, winrates
@@ -28,15 +28,12 @@ def betting_recommendation(pred_result, home_winrate, away_winrate, draw_gap=0.0
         return '✅ Bet' if abs(home_winrate - away_winrate) <= draw_gap else '❌ No Bet'
     return 'Unknown'
 
-# ===== Main interface =====
+# ===== Main Streamlit interface =====
 def main():
     st.title("🏟️ In-Match Result Prediction")
 
     club_stats, winrates = load_data()
     team_names = sorted(winrates["HomeTeam"].unique())
-
-    # 处理赛季为可比较的整数年份
-    club_stats["SeasonYear"] = club_stats["Season"].str[:4].astype(int)
 
     col1, col2 = st.columns(2)
     with col1:
@@ -52,9 +49,9 @@ def main():
 
     if st.button("🔮 Predict"):
         try:
-            # 自动获取每队最新赛季记录
-            home_row = club_stats[club_stats["Club"] == home_team].sort_values("SeasonYear", ascending=False).iloc[0]
-            away_row = club_stats[club_stats["Club"] == away_team].sort_values("SeasonYear", ascending=False).iloc[0]
+            # 提取每支队伍最新的赛季记录
+            recent_home = club_stats[club_stats["Club"] == home_team].sort_values("Season", ascending=False).iloc[0]
+            recent_away = club_stats[club_stats["Club"] == away_team].sort_values("Season", ascending=False).iloc[0]
             win_row = winrates[winrates["HomeTeam"] == home_team].iloc[0]
             away_win_row = winrates[winrates["HomeTeam"] == away_team].iloc[0]
         except IndexError:
@@ -72,17 +69,17 @@ def main():
             'WHH': odd_h, 'WHD': odd_d, 'WHA': odd_a,
             'AvgH': odd_h, 'AvgD': odd_d, 'AvgA': odd_a,
             'MaxH': odd_h, 'MaxD': odd_d, 'MaxA': odd_a,
-            'HPos': home_row["Position"], 'HPlayed': home_row["Played"],
-            'HWon': home_row["Won"], 'HDrawn': home_row["Drawn"], 'HLost': home_row["Lost"],
-            'APos': away_row["Position"], 'APlayed': away_row["Played"],
-            'AWon': away_row["Won"], 'ADrawn': away_row["Drawn"], 'ALost': away_row["Lost"],
+            'HPos': recent_home["Position"], 'HPlayed': recent_home["Played"],
+            'HWon': recent_home["Won"], 'HDrawn': recent_home["Drawn"], 'HLost': recent_home["Lost"],
+            'APos': recent_away["Position"], 'APlayed': recent_away["Played"],
+            'AWon': recent_away["Won"], 'ADrawn': recent_away["Drawn"], 'ALost': recent_away["Lost"],
             'HWinRate': home_winrate, 'AWinRate': away_winrate,
-            'HDrawRate': home_row["Drawn"] / (home_row["Played"] + eps),
-            'ADrawRate': away_row["Drawn"] / (away_row["Played"] + eps),
-            'HLossRate': home_row["Lost"] / (home_row["Played"] + eps),
-            'ALossRate': away_row["Lost"] / (away_row["Played"] + eps),
-            'PosDiff': away_row["Position"] - home_row["Position"],
-            'PosRatio': home_row["Position"] / (away_row["Position"] + eps),
+            'HDrawRate': recent_home["Drawn"] / (recent_home["Played"] + eps),
+            'ADrawRate': recent_away["Drawn"] / (recent_away["Played"] + eps),
+            'HLossRate': recent_home["Lost"] / (recent_home["Played"] + eps),
+            'ALossRate': recent_away["Lost"] / (recent_away["Played"] + eps),
+            'PosDiff': recent_away["Position"] - recent_home["Position"],
+            'PosRatio': recent_home["Position"] / (recent_away["Position"] + eps),
             'HDRatio': odd_h / (odd_d + eps),
             'HARatio': odd_h / (odd_a + eps),
             'DARatio': odd_d / (odd_a + eps)
@@ -100,13 +97,13 @@ def main():
 
         st.success(f"🎯 Prediction: **{readable}**")
         st.markdown("### 📊 Probability")
-        st.markdown(f"- Home Win: **{pred_proba[0]*100:.1f}%**")
-        st.markdown(f"- Draw: **{pred_proba[1]*100:.1f}%**")
-        st.markdown(f"- Away Win: **{pred_proba[2]*100:.1f}%**")
+        st.markdown(f"- Home Win: **{pred_proba[label_order.tolist().index('H')]*100:.1f}%**")
+        st.markdown(f"- Draw: **{pred_proba[label_order.tolist().index('D')]*100:.1f}%**")
+        st.markdown(f"- Away Win: **{pred_proba[label_order.tolist().index('A')]*100:.1f}%**")
         st.markdown("---")
         st.markdown(f"### 💡 Betting Suggestion: **{bet_suggestion}**")
         st.markdown(f"🏠 Home Win Rate: **{home_winrate:.2f}**  🛫 Away Win Rate: **{away_winrate:.2f}**")
 
-# ===== Exported for app.py =====
+# ===== Entry point for app.py to call =====
 def render_in_match_predict_section():
     main()
