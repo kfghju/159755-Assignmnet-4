@@ -155,21 +155,21 @@ def save_player_data():
 
     create_player_stats = """CREATE TABLE player_stats (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        full_name TEXT NOT NULL,             -- 球员全名
-        age INTEGER,                         -- 年龄
+        full_name TEXT NOT NULL,
+        age INTEGER,
         year TEXT NOT NULL,
-        overall_rating INTEGER,              -- 综合评分
-        potential INTEGER,                   -- 潜力评分
-        best_position TEXT,                  -- 最佳位置（如 ST, CM, CDM）
-        team TEXT,                           -- 所属球队
-        height_cm REAL,                      -- 身高（单位 cm）
-        weight_kg REAL,                      -- 体重（单位 kg）
-        value REAL,                          -- 市值（单位欧元）
-        wage REAL,                           -- 薪资（单位欧元/周）
-        short_passing INTEGER,               -- 短传评分
-        dribbling INTEGER,                   -- 盘带评分
-        stamina INTEGER,                     -- 体能评分
-        total_goalkeeping INTEGER            -- 总体门将能力评分（非门将通常较低）
+        overall_rating INTEGER,
+        potential INTEGER,
+        best_position TEXT,
+        team TEXT,
+        height_cm REAL,
+        weight_kg REAL,
+        value REAL,
+        wage REAL,
+        short_passing INTEGER,
+        dribbling INTEGER,
+        stamina INTEGER,
+        total_goalkeeping INTEGER
         );"""
 
     cursor.execute("DROP TABLE IF EXISTS player_stats")
@@ -182,20 +182,16 @@ def save_player_data():
         df_player['name'] = df_player['Name'].str.split('\n').str[0]
         df_player['year'] = os.path.basename(file)[-8:-4]
 
-        # 🔹 拆分 Team & Contract 为 team 和 contract 两列
         df_player['team'] = df_player['Team & Contract'].str.split('\n').str[0]
         df_player['contract'] = df_player['Team & Contract'].str.split('\n').str[1]
 
-        # 🔹 提取 height_cm（从 "181cm / 5'11"" 中提取 181）
         df_player['height_cm'] = df_player['Height'].str.extract(r'(\d+)cm').astype(float)
 
-        # 🔹 提取 weight_kg（从 "75kg / 165lbs" 中提取 75）
         df_player['weight_kg'] = df_player['Weight'].str.extract(r'(\d+)kg').astype(float)
 
         for col in ['Stamina', 'Dribbling', 'Short passing']:
             df_player[col] = df_player[col].astype(str).str.extract(r'(\d+)').astype(float)
 
-        # 🔹 重命名字段，统一命名风格（小写+下划线）
         df_player.rename(columns={
             'Full Name': 'full_name',
             'Age': 'age',
@@ -225,7 +221,7 @@ if __name__ == '__main__':
     connection = sqlite3.connect('../data/allData.sl3')
     cursor = connection.cursor()
     save_player_data()
-    # save_team_data()
-    # save_match_data()
+    save_team_data()
+    save_match_data()
     cursor.close()
     connection.close()
