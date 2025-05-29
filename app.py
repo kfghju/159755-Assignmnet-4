@@ -1,30 +1,51 @@
-# app.py (Minimal test version for in_match_predict import)
-import streamlit as st
+# app.py (主程序入口)
+import os
 import pandas as pd
+import streamlit as st
 
+st.set_page_config(page_title="Football Manager Simulator", layout="centered")
+
+from components.player_input import handle_player_input
+from components.recruit import render_recruit_section
+from components.team_manage import render_team_section
+from components.match import run_season_simulation
+from components.pre_match_predict import show_all_teams
 from components.in_match_predict import render_in_match_predict_section
 
-# Sample DataFrame with required structure
-sample_data = pd.DataFrame({
-    'HomeTeam': ['Chelsea', 'Man United'],
-    'AwayTeam': ['Arsenal', 'Liverpool'],
-    'Date': pd.to_datetime(['2024-04-01', '2024-04-02']),
-    'home_team_enc': [1, 2],
-    'away_team_enc': [3, 4],
-    'weekday': [0, 1],
-    'avg_home_odds': [1.8, 2.0],
-    'avg_draw_odds': [3.2, 3.0],
-    'avg_away_odds': [4.5, 3.8],
-    'odds_gap': [2.7, 1.8],
-    'draw_prob_ratio': [0.2, 0.25],
-    'min_odd_type': [0, 2],
-    'league_enc': [0, 1],
-    'season': [2024, 2024],
-    'HomeWinRate': [0.65, 0.45],
-    'AwayWinRate': [0.35, 0.55],
-    'FTR': ['H', 'A']
-})
+st.title("🎮 Virtual Football Manager")
 
-st.title("Minimal Test for In-Match Prediction Import")
+# Initialization state
+if 'budget' not in st.session_state:
+    st.session_state['budget'] = 100_000_000
+if 'team' not in st.session_state:
+    st.session_state['team'] = []
 
-render_in_match_predict_section(sample_data)
+# Function Selection
+mode = st.radio("Select which one you want", [
+    "Create New Player",
+    "Choose Preset Player",
+    "Match Predict (Pre-match)",
+    "Match Predict (In-match)"
+])
+st.session_state['mode'] = mode
+
+# === 页面逻辑分流 ===
+if mode == "Match Predict (In-match)":
+    render_in_match_predict_section()
+elif mode == "Match Predict (Pre-match)":
+    show_all_teams(mode)
+else:
+    # Processing player input logic (sidebar + model predictions)
+    handle_player_input(mode)
+    # Recruitment module (showing Player to Recruit + button)
+    render_recruit_section(mode)
+    # Team Presentation + Management
+    render_team_section(mode)
+    # Simulation Match
+    run_season_simulation()
+
+# Reset button
+if st.sidebar.button("Reset"):
+    for key in list(st.session_state.keys()):
+        del st.session_state[key]
+    st.rerun()
