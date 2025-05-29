@@ -30,7 +30,6 @@ def render_recruit_section(mode):
                     st.session_state['recruited_this_round'] = True
                     st.rerun()
 
-    # 清除 current_player 防止重复显示
     if st.session_state.get('recruited_this_round'):
         del st.session_state['current_player']
         del st.session_state['recruited_this_round']
