@@ -9,6 +9,7 @@ from components.recruit import render_recruit_section
 from components.team_manage import render_team_section
 from components.match import run_season_simulation
 from components.pre_match_predict import show_all_teams
+from components.in_match_predict import render_in_match_predict_section  
 
 st.title("🎮 Virtual Football Manager")
 
@@ -21,6 +22,9 @@ if 'team' not in st.session_state:
 # Function Selection
 mode = st.radio("Select which one you want", ["Create New Player", "Choose Preset Player",
                                               "Match Predict (Pre-match)", "Match Predict (In-match)"])
+if mode == "Match Predict (In-match)":
+    render_in_match_predict_section()
+    
 st.session_state['mode'] = mode
 
 # Processing player input logic (sidebar + model predictions)
