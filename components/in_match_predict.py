@@ -7,13 +7,13 @@ import joblib
 # ===== Data and model loading =====
 @st.cache_data
 def load_data():
-    base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # ⬅ 回到项目根目录
+    base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # 返回项目根目录
     club_stats = pd.read_csv(os.path.join(base, "data", "club_stats.csv"))
     winrates = pd.read_csv(os.path.join(base, "data", "team_winrates.csv"))
     return club_stats, winrates
 
 def load_model_and_scaler():
-    base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # ⬅ 回到项目根目录
+    base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))  # 返回项目根目录
     model = joblib.load(os.path.join(base, "models", "in_match_result_model.pkl"))
     scaler = joblib.load(os.path.join(base, "models", "in_match_result_scaler.pkl"))
     return model, scaler
@@ -28,7 +28,7 @@ def betting_recommendation(pred_result, home_winrate, away_winrate, draw_gap=0.0
         return '✅ Bet' if abs(home_winrate - away_winrate) <= draw_gap else '❌ No Bet'
     return 'Unknown'
 
-# ===== Main UI function =====
+# ===== Main interface =====
 def main():
     st.title("🏟️ In-Match Result Prediction")
 
@@ -51,12 +51,11 @@ def main():
         try:
             home_row = club_stats[(club_stats["Club"] == home_team) & (club_stats["Season"] == "2024/25")].iloc[0]
             away_row = club_stats[(club_stats["Club"] == away_team) & (club_stats["Season"] == "2024/25")].iloc[0]
+            win_row = winrates[winrates["HomeTeam"] == home_team].iloc[0]
+            away_win_row = winrates[winrates["HomeTeam"] == away_team].iloc[0]
         except IndexError:
-            st.error("❌ No data found for selected teams in season 2024/25.")
+            st.error("❌ No data found for selected teams.")
             return
-
-        win_row = winrates[winrates["HomeTeam"] == home_team].iloc[0]
-        away_win_row = winrates[winrates["HomeTeam"] == away_team].iloc[0]
 
         home_winrate, away_winrate = win_row["HomeWinRate"], away_win_row["AwayWinRate"]
         eps = 1e-6
@@ -87,12 +86,10 @@ def main():
 
         model, scaler = load_model_and_scaler()
         X_scaled = scaler.transform(df_input)
-        pred_index = model.predict(X_scaled)[0]
+        pred_label = model.predict(X_scaled)[0]             # ⚠️ 直接是 'H' / 'D' / 'A'
         pred_proba = model.predict_proba(X_scaled)[0]
 
-        label_map = {0: 'H', 1: 'D', 2: 'A'}
         label_text = {'H': '🏠 Home Win', 'D': '⚖️ Draw', 'A': '🏟️ Away Win'}
-        pred_label = label_map[pred_index]
         readable = label_text[pred_label]
         bet_suggestion = betting_recommendation(pred_label, home_winrate, away_winrate)
 
@@ -105,6 +102,6 @@ def main():
         st.markdown(f"### 💡 Betting Suggestion: **{bet_suggestion}**")
         st.markdown(f"🏠 Home Win Rate: **{home_winrate:.2f}**  🛫 Away Win Rate: **{away_winrate:.2f}**")
 
-# ===== Exported function for app.py =====
+# ===== Exported for app.py to call =====
 def render_in_match_predict_section():
     main()
